@@ -1,4 +1,5 @@
-# EMTSF
+# EMTSF: Extraordinary Mixture of SOTA Models for
+Time Series Forecasting
 
 Abstract. The immense success of the Transformer architecture
 in Natural Language Processing has led to its adoption in Time Series Forecasting (TSF), where superior performance has been shown.
