@@ -40,54 +40,7 @@ from models import EMTSF, model_b, model_c, Model,model_d#, model_a
 
 # Argument Parsing
 parser = argparse.ArgumentParser()
-parser.add_argument('--n1',type=int,default=256,help='First Embedded representation')#256
-parser.add_argument('--n2',type=int,default=256,help='Second Embedded representation')
-parser.add_argument('--ch_ind', type=int, default=1, help='Channel Independence; True 1 False 0')
-parser.add_argument('--d_state', type=int, default=256, help='d_state parameter of Mamba')#256
-parser.add_argument('--dconv', type=int, default=2, help='d_conv parameter of Mamba')
-parser.add_argument('--e_fact', type=int, default=2, help='expand factor parameter of Mamba')
-parser.add_argument('--residual', type=int, default=1, help='Residual Connection; True 1 False 0')
 
-parser.add_argument('--output_attention', action='store_true', help='whether to output attention in ecoder')
-parser.add_argument('--use_norm', type=int, default=True, help='use norm and denorm')
-parser.add_argument('--embed', type=str, default='timeF',
-                        help='time features encoding, options:[timeF, fixed, learned]')
-parser.add_argument('--freq', type=str, default='h',
-                        help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
-parser.add_argument('--class_strategy', type=str, default='projection', help='projection/average/cls_token') 
-parser.add_argument('--e_layers', type=int, default=2, help='num of encoder layers')
-parser.add_argument('--activation', type=str, default='gelu', help='activation')
-#parser.add_argument('--enc_in', type=int, default=7, help='encoder input size')
-#parser.add_argument('--embed_type', type=int, default=1, help='0: default 1: value embedding + temporal embedding + positional embedding 2: value embedding + temporal embedding 3: value embedding + positional embedding 4: value embedding')
-
-parser.add_argument('--momentum', type=float, default=0.1, help='momentum')
-parser.add_argument('--dp_rank', type=int,default = 8)
-parser.add_argument('--alpha', type=float, default=0.5)
-parser.add_argument('--merge_size',type=int,default = 2)
-parser.add_argument('--task_name', type=str, default='short_term_forecast',
-                        help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
-
-parser.add_argument('--individual', action='store_true', default=False, help='DLinear: a linear layer for each variate(channel) individually') 
-parser.add_argument('--decomp_method', type=str, default='moving_avg',
-                        help='method of series decompsition, only support moving_avg or dft_decomp')
-parser.add_argument('--moving_avg', type=int, default=25, help='window size of moving average')
-
-parser.add_argument('--channel_independence', type=int, default=1,
-                        help='0: channel dependence 1: channel independence for FreTS model')
-parser.add_argument('--down_sampling_layers', type=int, default=0, help='num of down sampling layers')
-parser.add_argument('--d_ff', type=int, default=512, help='dimension of fcn')
-#parser.add_argument('--e_layers', type=int, default=2, help='num of encoder layers')
-#            help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
-parser.add_argument('--label_len', type=int, default=48, help='start token length')
-
-parser.add_argument('--down_sampling_window', type=int, default=1, help='down sampling window size')
-
-parser.add_argument('--down_sampling_method', type=str, default=None,
-                        help='down sampling method, only support avg, max, conv')
-
-
-# Dataset and dataloader
-parser.add_argument('--features2', type=int, default=7, help='Each prediction includes 7 features')
 
 # IntegratedModel   model1 model2 dlinear
 parser.add_argument('--dset', type=str, default='ettm1', help='dataset name')
@@ -126,6 +79,54 @@ parser.add_argument('--model_type', type=str, default='based_model', help='for m
 # training
 parser.add_argument('--is_train', type=int, default=1, help='training the model')
 parser.add_argument('--enc_in', type=int, default=7, help='encoder input size')
+
+parser.add_argument('--n1',type=int,default=256,help='First Embedded representation')#256
+parser.add_argument('--n2',type=int,default=256,help='Second Embedded representation')
+parser.add_argument('--ch_ind', type=int, default=1, help='Channel Independence; True 1 False 0')
+parser.add_argument('--d_state', type=int, default=256, help='d_state parameter of Mamba')#256
+parser.add_argument('--dconv', type=int, default=2, help='d_conv parameter of Mamba')
+parser.add_argument('--e_fact', type=int, default=2, help='expand factor parameter of Mamba')
+parser.add_argument('--residual', type=int, default=1, help='Residual Connection; True 1 False 0')
+
+parser.add_argument('--output_attention', action='store_true', help='whether to output attention in ecoder')
+parser.add_argument('--use_norm', type=int, default=True, help='use norm and denorm')
+parser.add_argument('--embed', type=str, default='timeF',
+                        help='time features encoding, options:[timeF, fixed, learned]')
+parser.add_argument('--freq', type=str, default='h',
+                        help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
+parser.add_argument('--class_strategy', type=str, default='projection', help='projection/average/cls_token') 
+parser.add_argument('--e_layers', type=int, default=2, help='num of encoder layers')
+parser.add_argument('--activation', type=str, default='gelu', help='activation')
+
+parser.add_argument('--momentum', type=float, default=0.1, help='momentum')
+parser.add_argument('--dp_rank', type=int,default = 8)
+parser.add_argument('--alpha', type=float, default=0.5)
+parser.add_argument('--merge_size',type=int,default = 2)
+parser.add_argument('--task_name', type=str, default='short_term_forecast',
+                        help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
+
+parser.add_argument('--individual', action='store_true', default=False, help='DLinear: a linear layer for each variate(channel) individually') 
+parser.add_argument('--decomp_method', type=str, default='moving_avg',
+                        help='method of series decompsition, only support moving_avg or dft_decomp')
+parser.add_argument('--moving_avg', type=int, default=25, help='window size of moving average')
+
+parser.add_argument('--channel_independence', type=int, default=1,
+                        help='0: channel dependence 1: channel independence for FreTS model')
+parser.add_argument('--down_sampling_layers', type=int, default=0, help='num of down sampling layers')
+parser.add_argument('--d_ff', type=int, default=512, help='dimension of fcn')
+#parser.add_argument('--e_layers', type=int, default=2, help='num of encoder layers')
+#            help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
+parser.add_argument('--label_len', type=int, default=48, help='start token length')
+
+parser.add_argument('--down_sampling_window', type=int, default=1, help='down sampling window size')
+
+parser.add_argument('--down_sampling_method', type=str, default=None,
+                        help='down sampling method, only support avg, max, conv')
+
+
+# Dataset and dataloader
+parser.add_argument('--features2', type=int, default=7, help='Each prediction includes 7 features')
+
 
 
 parser.add_argument('--cfg', type=str, required=False, metavar="FILE", help='path to config file', )
