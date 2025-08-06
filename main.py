@@ -35,7 +35,7 @@ from src.metrics import *
 from datautils import get_dls
 
 
-from EMTSF import EMTSF, model_b, model_c, Model,model_d#, model_a
+from models import EMTSF, model_b, model_c, Model,model_d#, model_a
 
 
 # Argument Parsing
