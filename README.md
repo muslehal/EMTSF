@@ -1,5 +1,3 @@
-![IMG_1114](https://github.com/user-attachments/assets/41fcd172-1485-4998-a6ba-3e973c9edaa9)
-![IMG_1113](https://github.com/user-attachments/assets/b96c9dc6-0e12-4942-9c70-7c7ca3ecb71f)
 # EMTSF: Extraordinary Mixture of SOTA Models for
 Time Series Forecasting
 
@@ -19,3 +17,8 @@ xLSTM, enhanced Linear, PatchTST, minGRU among others. This
 set of complimentary and diverse models for TSF are integrated in a
 Transformer MoE model. Our results on standard TSF benchmarks
 demonstrate better results surpassing all current TSF models, including those based on recent MoE frameworks.
+
+
+
+![IMG_1114](https://github.com/user-attachments/assets/41fcd172-1485-4998-a6ba-3e973c9edaa9)
+![IMG_1113](https://github.com/user-attachments/assets/b96c9dc6-0e12-4942-9c70-7c7ca3ecb71f)
