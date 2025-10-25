@@ -4,7 +4,7 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Paper: [EMTSF — Full paper (PDF)](https://ebooks.iospress.nl/Download/Pdf)
+Paper published at ECAI 2025  : [EMTSF — Full paper (PDF)](https://ebooks.iospress.nl/volumearticle/76052)
 
 
 ## 📝 Abstract
