@@ -3,12 +3,15 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Paper](https://img.shields.io/badge/Paper-arXiv-red.svg)](https://arxiv.org/abs/XXXX.XXXXX)
 
 ## 📝 Abstract
 
 The immense success of the Transformer architecture in Natural Language Processing has led to its adoption in Time Series Forecasting (TSF), where superior performance has been shown. However, a recent important paper questioned their effectiveness by demonstrating that a simple single layer linear model outperforms Transformer-based models. This was soon shown to be not as valid, by a better transformer-based model termed PatchTST. More recently, TimeLLM demonstrated even better results by reprogramming i.e., repurposing a Large Language Model (LLM) for the TSF domain. Again, a follow up paper challenged this by demonstrating that removing the LLM component or replacing it with a basic attention layer in fact yields better performance.
 
 One of the challenges in forecasting is the fact that TSF data favors the more recent past, and is sometimes subject to unpredictable events. Based upon these recent insights in TSF, we propose a **Mixture of Experts (MoE) framework**. Our method combines state-of-the-art (SOTA) models including **xLSTM**, **enhanced Linear models**, **PatchTST**, and **minGRU** among others. This set of complimentary and diverse models for TSF are integrated in a Transformer-based MoE architecture. Our results on standard TSF benchmarks demonstrate better results surpassing all current TSF models, including those based on recent MoE frameworks.
+
+📄 **[Read the paper on arXiv](https://arxiv.org/abs/XXXX.XXXXX)** (Link to be updated upon publication)
 
 ## 🎯 Key Features
 
@@ -234,14 +237,17 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📚 Citation
 
-If you use this code in your research, please cite:
+If you use this code in your research, please cite our paper:
+
+**Paper**: [EMTSF: Extraordinary Mixture of SOTA Models for Time Series Forecasting](https://arxiv.org/abs/XXXX.XXXXX)
 
 ```bibtex
 @article{emtsf2024,
   title={EMTSF: Extraordinary Mixture of SOTA Models for Time Series Forecasting},
   author={[Your Name]},
-  journal={arXiv preprint},
-  year={2024}
+  journal={arXiv preprint arXiv:XXXX.XXXXX},
+  year={2024},
+  url={https://arxiv.org/abs/XXXX.XXXXX}
 }
 ```
 
