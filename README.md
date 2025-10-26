@@ -22,6 +22,11 @@ One of the challenges in forecasting is the fact that TSF data favors the more r
 - **Reversible Instance Normalization (RevIN)**: Built-in support for improved generalization
 - **Distributed Training**: Multi-GPU support for efficient training
 
+## 📈 Results
+
+![Results Overview](https://github.com/user-attachments/assets/41fcd172-1485-4998-a6ba-3e973c9edaa9)
+![Performance Comparison](https://github.com/user-attachments/assets/b96c9dc6-0e12-4942-9c70-7c7ca3ecb71f)
+
 ## 📊 Supported Datasets
 
 The framework supports the following standard TSF benchmarks:
@@ -30,8 +35,6 @@ The framework supports the following standard TSF benchmarks:
 - **Weather**: Weather forecasting data
 - **Electricity**: Electricity consumption data
 - **Traffic**: Road occupancy rates
-- **Solar**: Solar power production
-- **Exchange**: Exchange rate data
 - **Illness**: Illness cases data
 - **PEMS**: Traffic datasets (`PEMS03`, `PEMS04`, `PEMS07`, `PEMS08`)
 
@@ -102,23 +105,6 @@ bash script.sh -d ettm1 -e 100
 bash script.sh -d ettm1 -e 100 --test
 ```
 
-### Key Arguments
-
-| Argument | Type | Default | Description |
-|----------|------|---------|-------------|
-| `--dset` | str | `ettm1` | Dataset name |
-| `--context_points` | int | `512` | Input sequence length |
-| `--target_points` | int | `96` | Forecasting horizon |
-| `--batch_size` | int | `64` | Batch size |
-| `--n_epochs` | int | `100` | Number of training epochs |
-| `--lr` | float | `1e-3` | Learning rate |
-| `--model_type` | str | `based_model` | Model type to train |
-| `--patch_len` | int | `32` | Patch length for PatchTST |
-| `--stride` | int | `16` | Stride between patches |
-| `--n_layers` | int | `6` | Number of Transformer layers |
-| `--d_model` | int | `128` | Model dimension |
-| `--dropout` | float | `0.2` | Dropout rate |
-| `--revin` | int | `1` | Use Reversible Instance Normalization |
 
 ## 🏗️ Model Architecture
 
@@ -127,10 +113,10 @@ bash script.sh -d ettm1 -e 100 --test
 The EMTSF model architecture consists of:
 
 1. **Expert Models**:
-   - **Model A**: Enhanced Linear model with decomposition
-   - **Model B**: xLSTM-based model for long-term dependencies
+   - **Model A**:  PatchTST for patch-based attention
+   - **Model B**: xLSTMTime model for long-term dependencies
    - **Model C**: minGRU for efficient sequence modeling
-   - **Model D**: PatchTST for patch-based attention
+   - **Model D**: Enhanced Linear model with decomposition
 
 2. **Gating Network**: Transformer-based attention mechanism that learns to weight expert predictions
 
@@ -139,33 +125,6 @@ The EMTSF model architecture consists of:
 ```
 Input → [Expert A, Expert B, Expert C, Expert D] → Transformer Attention → Gating Weights → Weighted Combination → Output
 ```
-
-### Expert Models Details
-
-#### Model A (Enhanced Linear)
-- Series decomposition (trend + seasonal)
-- Channel-independent processing
-- RevIN normalization
-
-#### Model B (xLSTM)
-- mLSTM and sLSTM blocks
-- Configurable depth and dimension
-- Efficient long-sequence modeling
-
-#### Model C (minGRU)
-- Lightweight gating mechanism
-- Fast inference
-- Memory-efficient
-
-#### Model D (PatchTST)
-- Patch-based tokenization
-- Self-attention over patches
-- Channel-independent or channel-mixing options
-
-## 📈 Results
-
-![Results Overview](https://github.com/user-attachments/assets/41fcd172-1485-4998-a6ba-3e973c9edaa9)
-![Performance Comparison](https://github.com/user-attachments/assets/b96c9dc6-0e12-4942-9c70-7c7ca3ecb71f)
 
 Our EMTSF model achieves state-of-the-art performance across multiple benchmarks, outperforming:
 - Traditional LSTM/GRU models
@@ -193,44 +152,6 @@ EMTSF/
 └── layers/                # Custom layer implementations
 ```
 
-## 🔧 Advanced Configuration
-
-### Custom Dataset
-
-To add a custom dataset, modify `datautils.py`:
-
-```python
-elif params.dset == 'your_dataset':
-    root_path = '/path/to/your/dataset'
-    size = [params.context_points, 0, params.target_points]
-    dls = DataLoaders(
-        datasetCls=Dataset_Custom,
-        dataset_kwargs={
-            'root_path': root_path,
-            'data_path': 'your_data.csv',
-            'features': params.features,
-            'scale': True,
-            'size': size,
-            'use_time_features': params.use_time_features
-        },
-        batch_size=params.batch_size,
-        workers=params.num_workers,
-    )
-```
-
-### Hyperparameter Tuning
-
-Key hyperparameters to tune:
-- `d_model`: Model dimension (affects capacity)
-- `n_layers`: Number of Transformer layers
-- `patch_len` and `stride`: For PatchTST expert
-- `lr`: Learning rate (start with 1e-3)
-- Expert weights in MoE (adjustable via gating network)
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
@@ -240,11 +161,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 If you use this code in your research, please cite:
 
 ```bibtex
-@article{emtsf2024,
+@article{emtsf2025,
   title={EMTSF: Extraordinary Mixture of SOTA Models for Time Series Forecasting},
-  author={[Your Name]},
-  journal={arXiv preprint},
-  year={2024}
+  authors={[Musleh Alharthia, Kaleel Mahmoodb, Sarosh Patela and Ausif Mahmooda]},
+  journal={https://ebooks.iospress.nl/volumearticle/76052},
+  year={2025}
 }
 ```
 
@@ -252,11 +173,11 @@ If you use this code in your research, please cite:
 
 This project builds upon several excellent works:
 - [PatchTST](https://github.com/yuqinie98/PatchTST)
-- [xLSTM](https://github.com/NX-AI/xlstm)
+- [xLSTMTime](https://github.com/muslehal/xLSTMTime)
 - [minGRU](https://github.com/lucidrains/minGRU-pytorch)
-- [Autoformer](https://github.com/thuml/Autoformer)
+- [Enhanced Linear Model (ELM)](https://github.com/muslehal/Enhanced-Linear-Model-ELM-)
 
-## 📧 Contact
+## 📧 Contact: muslehneyash@gmail.com
 
 For questions and feedback, please open an issue on GitHub.
 
