@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Paper published at ECAI 2025  : [EMTSF — Full paper (PDF)](https://ebooks.iospress.nl/volumearticle/76052)
+https://arxiv.org/pdf/2510.23396
 
 
 ## 📝 Abstract
