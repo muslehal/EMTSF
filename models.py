@@ -26,7 +26,7 @@ import torch.optim as optim
 
 from math import fabs
 from pickle import TRUE
-from re import T
+# from re import T
 import os
 import math
 
@@ -937,7 +937,7 @@ class SimpleTransformer(nn.Module):
 
     def forward(self, x, mask=None):
         # x shape: [B, Feat, Exp, S]
-        print(x.shape) #torch.Size([64, 7, 5, 96])
+        # print(x.shape) #torch.Size([64, 7, 5, 96])
         B, Feat, Exp, S = x.shape
         x = x.permute(0, 3, 1, 2).reshape(B, S, Feat * Exp)  # [B, S, D]
         x = self.linear(x)  # Now [B, S, 128]

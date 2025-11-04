@@ -10,7 +10,7 @@ set -e
 # Default values for parameters
 DEFAULT_N_EPOCHS=100
 DEFAULT_DSET="electricity"  # Replace with your actual dataset name
-PYTHON_SCRIPT="train.py"  # Replace with your Python script name if different
+PYTHON_SCRIPT="main.py"  # Replace with your Python script name if different
 
 
 # Fixed parameters
