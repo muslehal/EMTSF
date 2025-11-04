@@ -392,11 +392,11 @@ def plot_feature_actual_vs_predicted(actual, predicted, feature_idx):
 if __name__ == '__main__':
     if args.is_train:
         # Train model_a
-        #suggested_lr = find_lr()
-        #print('Suggested LR for model_a:', suggested_lr)
-        #def count_parameters(model_a): # count number of trainable parameters in the model
-        #     return sum(p.numel() for p in model.parameters() if p.requires_grad)
-        #train_func(model_type='model_a', lr=suggested_lr)
+        suggested_lr = find_lr()
+        print('Suggested LR for model_a:', suggested_lr)
+        def count_parameters(model_a): # count number of trainable parameters in the model
+            return sum(p.numel() for p in model.parameters() if p.requires_grad)
+        train_func(model_type='model_a', lr=suggested_lr)
 
         #train model_b
         suggested_lr = find_lr()
