@@ -506,22 +506,160 @@ class ParallelConvLD(nn.Module):
     
 
     
+# ---------------------------------------------------------------------------
+# Block Attention Residuals (AttnRes) — MoonshotAI
+# Based on: https://github.com/MoonshotAI/Attention-Residuals
+# ---------------------------------------------------------------------------
+
+class AttnResRMSNorm(nn.Module):
+    """RMSNorm used for normalising AttnRes keys (supports any-rank input)."""
+    def __init__(self, dim, eps=1e-8):
+        super().__init__()
+        self.dim = dim
+        self.eps = eps
+        self.gamma = nn.Parameter(torch.ones(dim))
+
+    def forward(self, x):
+        norm = torch.sqrt(torch.mean(x ** 2, dim=-1, keepdim=True) + self.eps)
+        return x / norm * self.gamma
+
+
+def block_attn_res(blocks, partial_block, proj, norm):
+    """Inter-block attention: attend over completed block reps + partial sum.
+
+    Args:
+        blocks: list of N tensors of shape [B, T, D] — completed block reps.
+        partial_block: [B, T, D] — intra-block partial sum for the current block.
+        proj: nn.Linear(D, 1, bias=False) — learned pseudo-query per layer.
+        norm: AttnResRMSNorm(D) — normalises keys before dot-product.
+    Returns:
+        h: [B, T, D] — attended representation.
+    """
+    V = torch.stack(blocks + [partial_block])      # [N+1, B, T, D]
+    K = norm(V)                                     # [N+1, B, T, D]
+    logits = torch.einsum('d, n b t d -> n b t', proj.weight.squeeze(), K)       # [N+1, B, T]
+    h = torch.einsum('n b t, n b t d -> b t d', logits.softmax(dim=0), V)       # [B, T, D]
+    return h
+
+
+class AttnResTransformerLayer(nn.Module):
+    """Single transformer layer with Block AttnRes instead of standard residuals.
+
+    Following the paper pseudocode each sub-layer (attention + MLP) has its own
+    ``attn_res_proj`` / ``attn_res_norm`` pair that replaces the plain ``+``
+    residual connection.
+    """
+    def __init__(self, d_model, n_heads, d_ff, block_size, layer_number, dropout=0.1):
+        super().__init__()
+        self.layer_number = layer_number
+        self.block_size = block_size
+
+        # Pre-norm for attention sub-layer
+        self.attn_norm = RMSNorm(d_model)
+        self.attn = MHSelfAttention(dim=d_model, heads=n_heads, causal=False)
+
+        # Pre-norm for MLP sub-layer
+        self.mlp_norm = RMSNorm(d_model)
+        self.mlp = nn.Sequential(
+            nn.Linear(d_model, d_ff),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_ff, d_model),
+            nn.Dropout(dropout),
+        )
+
+        # AttnRes components for the attention sub-layer
+        self.attn_res_proj = nn.Linear(d_model, 1, bias=False)
+        self.attn_res_norm = AttnResRMSNorm(d_model)
+
+        # AttnRes components for the MLP sub-layer
+        self.mlp_res_proj = nn.Linear(d_model, 1, bias=False)
+        self.mlp_res_norm = AttnResRMSNorm(d_model)
+
+    def forward(self, blocks, hidden_states):
+        """
+        Args:
+            blocks: list of completed block tensors [B, T, D].
+            hidden_states: [B, T, D] — intra-block partial sum entering this layer.
+        Returns:
+            (blocks, partial_block): updated blocks list and new partial sum.
+        """
+        partial_block = hidden_states
+
+        # --- Attention sub-layer ---
+        h = block_attn_res(blocks, partial_block, self.attn_res_proj, self.attn_res_norm)
+
+        # At every block boundary (every block_size//2 layers) snapshot the
+        # current partial_block as a completed block representation.
+        if self.layer_number % (self.block_size // 2) == 0:
+            blocks = blocks + [partial_block]   # non-destructive append
+            partial_block = None
+
+        attn_out = self.attn(self.attn_norm(h))
+        partial_block = attn_out if partial_block is None else partial_block + attn_out
+
+        # --- MLP sub-layer ---
+        h = block_attn_res(blocks, partial_block, self.mlp_res_proj, self.mlp_res_norm)
+        mlp_out = self.mlp(self.mlp_norm(h))
+        partial_block = partial_block + mlp_out
+
+        return blocks, partial_block
+
+
+class AttnResTransformer(nn.Module):
+    """Stack of AttnResTransformerLayer with shared Block AttnRes state."""
+    def __init__(self, d_model, n_heads, d_ff, n_layers, block_size, dropout=0.1):
+        super().__init__()
+        self.layers = nn.ModuleList([
+            AttnResTransformerLayer(
+                d_model=d_model,
+                n_heads=n_heads,
+                d_ff=d_ff,
+                block_size=block_size,
+                layer_number=i,
+                dropout=dropout,
+            )
+            for i in range(n_layers)
+        ])
+
+    def forward(self, x):
+        """
+        Args:
+            x: [B, T, D]
+        Returns:
+            [B, T, D]
+        """
+        blocks = []
+        hidden_states = x
+        for layer in self.layers:
+            blocks, hidden_states = layer(blocks, hidden_states)
+        return hidden_states
+
+
 class model_c(torch.nn.Module):
+    """Time-series forecasting model using Block Attention Residuals (AttnRes).
+
+    Keeps the same decomposition + linear projection front-end as the original
+    model_c, but replaces the minGRU-based backbone with an AttnRes Transformer.
+
+    Input:  x [Batch, context_points, Channel]
+    Output:   [Batch, target_points,  Channel]
+    """
     def __init__(self, configs, enc_in):
         super(model_c, self).__init__()
         self.configs = configs
         self.enc_in = enc_in
-        #self.batch_norm =CrossIterationChannelNorm(self.enc_in)# nn.BatchNorm1d(self.enc_in)
         self.batch_norm = BatchChannelNorm(enc_in, gamma_init=1.0, beta_init=0.0)
-        d_model = 64
-        init = "zeros"
-        constraint = "no"
-        batch_size = 1
 
-       
+        n_attn_res_layers = 4
+        d_model = getattr(configs, 'n2', 256)   # hidden dim (default 256)
+        n_heads = 8
+        block_size = 4
+        d_ff = d_model * 4
+        dropout = 0.1
 
         # Decomposition Kernel Size
-        kernel_size = [25,25]
+        kernel_size = [25, 25]
         self.decomposition = SeriesDecomp9(kernel_size)
         self.LD = MultiConvLD(kernel_size)
 
@@ -535,45 +673,41 @@ class model_c(torch.nn.Module):
             (1 / configs.context_points) * torch.ones([configs.target_points, configs.context_points])
         )
 
-        self.mm = nn.Linear(self.configs.target_points, self.configs.n2)        
-        self.mm2 = nn.Linear(self.configs.n2, configs.target_points)
-        self.mm3 = nn.Linear(configs.context_points, self.configs.n2)
+        # Project combined seasonal+trend to d_model
+        self.mm = nn.Linear(configs.target_points, d_model)
 
-        self.mamba_layer = minGRU (
-                
-                dim = 256,
-                # depth = 6
-            )
-        self.Linear = nn.Linear(self.configs.target_points, self.configs.target_points)
+        # Block AttnRes Transformer backbone
+        self.attn_res_transformer = AttnResTransformer(
+            d_model=d_model,
+            n_heads=n_heads,
+            d_ff=d_ff,
+            n_layers=n_attn_res_layers,
+            block_size=block_size,
+            dropout=dropout,
+        )
+
+        # Project back to forecast horizon
+        self.mm2 = nn.Linear(d_model, configs.target_points)
 
     def forward(self, x):
-        # Initial Decomposition using series_decomp
+        # Series decomposition
         seasonal_init, trend_init = self.decomposition(x)
-
-        # Further Trend Extraction using LD on the trend component
         trend_refined = self.LD(trend_init)
 
-        # Update the residual component if necessary (optional)
-        # residual_update = some_function(seasonal_init)
-
-        # Permute dimensions for linear layers
+        # Permute to [B, C, T] for linear projection over time
         seasonal_init = seasonal_init.permute(0, 2, 1)
         trend_refined = trend_refined.permute(0, 2, 1)
 
-        # Linear transformations
-        seasonal_output = self.Linear_Seasonal(seasonal_init)
-        trend_output = self.Linear_Trend(trend_refined)
+        seasonal_output = self.Linear_Seasonal(seasonal_init)   # [B, C, target_points]
+        trend_output = self.Linear_Trend(trend_refined)         # [B, C, target_points]
 
-        # Combine the outputs
-        x = seasonal_output + trend_output
+        x = seasonal_output + trend_output                      # [B, C, target_points]
 
-        # Additional layers
-        x = self.mm(x)
-        x = self.batch_norm(x)
-        x=self.mamba_layer(x)
-        #x = self.Linear (x)
-        x = self.mm2(x)
-        x = x.permute(0, 2, 1)
+        x = self.mm(x)                                          # [B, C, d_model]
+        x = self.batch_norm(x)                                  # [B, C, d_model]
+        x = self.attn_res_transformer(x)                        # [B, C, d_model]
+        x = self.mm2(x)                                         # [B, C, target_points]
+        x = x.permute(0, 2, 1)                                  # [B, target_points, C]
 
         return x
 
